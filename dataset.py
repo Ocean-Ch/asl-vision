@@ -91,6 +91,9 @@ class WLASLDataset(Dataset):
         # create reverse mapping: gloss -> ID (e.g., "hello" -> 0, "thank you" -> 1)
         self.gloss_to_id = {g: i for i, g in enumerate(self.glosses)}
         
+        IMAGENET_MEAN = [0.485, 0.456, 0.406]
+        IMAGENET_STD = [0.229, 0.224, 0.225]
+        
         # set up image preprocessing pipeline
         self.transform = transforms.Compose([
             transforms.ToPILImage(),  # np array -> PIL Image (required for torchvision transforms)
@@ -99,8 +102,6 @@ class WLASLDataset(Dataset):
             
             # normalize using ImageNet dataset statistics (mean and std for RGB channels)
             # helps training by centering the data around 0 and scaling it
-            IMAGENET_MEAN = [0.485, 0.456, 0.406]
-            IMAGENET_STD = [0.229, 0.224, 0.225]
             transforms.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD)
         ])
 
