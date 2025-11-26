@@ -27,3 +27,15 @@ The final stage maps the learned representation to a class label.
 * The LSTM output is passed through a **Fully Connected (Dense)** layer.
 * A **Softmax** activation function generates a probability distribution over the 2,000 ASL gloss classes.
 * The class with the highest probability is selected as the final prediction.
+
+## References
+
+This project is inspired by and built upon the following academic papers and architectures:
+
+* **MobileNetV2 Backbone** Sandler, M., Howard, A., Zhu, M., Zhmoginov, A., & Chen, L. C. (2018). *MobileNetV2: Inverted Residuals and Linear Bottlenecks*. Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR), 4510-4520. [Link to Paper](https://arxiv.org/abs/1801.04381)
+
+* **LSTM Network** Hochreiter, S., & Schmidhuber, J. (1997). *Long Short-Term Memory*. Neural Computation, 9(8), 1735-1780. [Link to Paper](https://www.mitpressjournals.org/doi/abs/10.1162/neco.1997.9.8.1735)
+
+* **CNN-RNN Hybrid Architecture** Donahue, J., Hendricks, L. A., Guadarrama, S., Rohrbach, M., Venugopalan, S., Saenko, K., & Darrell, T. (2015). *Long-term recurrent convolutional networks for visual recognition and description*. Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR), 2625-2634. [Link to Paper](https://arxiv.org/abs/1411.4389)
+
+* **Video-based SLR** Huang, J., & Chouvatut, V. (2024). *Video-based sign language recognition via ResNet and LSTM network*. Journal of Imaging, 10(6), 149. [Link to Paper](https://www.mdpi.com/2313-433X/10/6/149)
