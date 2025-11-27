@@ -38,7 +38,8 @@ class WLASLDataset(Dataset):
         frames_per_clip: int = 32, 
         split: str = 'train',
         debug_mode: bool = False,
-        use_cached_features: bool = True
+        use_cached_features: bool = True,
+        num_classes: int = None
     ):
         """
         Initialize the dataset by loading metadata and setting up preprocessing.
@@ -84,7 +85,18 @@ class WLASLDataset(Dataset):
         # contains entries with 'gloss' (sign language word) and 'instances' (video examples)
         with open(json_path, 'r') as f:
             raw_data = json.load(f)
+
+        # filter for top N most frequent classes
+        if num_classes is not None:
+            raw_data.sort(key=lambda x: len(x['instances']), reverse=True)
+            raw_data = raw_data[:num_classes]
+            print(f"🔍 Selected {num_classes} classes from {len(raw_data)} total classes (filtered by frequency)")
             
+        # create vocabulary: map each unique gloss to a numeric ID (dupes removed, sorted)
+        self.glosses = sorted([entry['gloss'] for entry in raw_data])
+        self.gloss_to_id = {g: i for i, g in enumerate(self.glosses)}
+        print(f"🔍 Created vocabulary with {len(self.glosses)} unique glosses")
+
         self.samples = []  # store all valid video samples
 
         num_videos = 0
@@ -131,10 +143,7 @@ class WLASLDataset(Dataset):
                         # log file not found
                         print(f"Video file not found: {path}")
 
-        # create vocabulary: map each unique gloss to a numeric ID (dupes removed, sorted)
-        self.glosses = sorted(list(set(s['gloss'] for s in self.samples)))
-        # create reverse mapping: gloss -> ID (e.g., "hello" -> 0, "thank you" -> 1)
-        self.gloss_to_id = {g: i for i, g in enumerate(self.glosses)}
+
         
         if self.use_cached_features:
             self.cached_features = torch.load(config.FEATURE_FILE)

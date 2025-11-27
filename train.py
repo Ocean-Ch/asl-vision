@@ -24,7 +24,7 @@ import json
 import os
 from utils import get_accuracy_counts
 from device import get_device
-from config import JSON_PATH, VIDEO_DIR, HISTORY_PATH, MODEL_DIR, LR, BATCH_SIZE, DEBUG_BATCH_SIZE, EPOCHS, DEBUG_EPOCHS, NUM_WORKERS, PIN_MEMORY, FROZEN_CNN, USE_CACHED_FEATURES
+from config import JSON_PATH, VIDEO_DIR, HISTORY_PATH, MODEL_DIR, LR, BATCH_SIZE, DEBUG_BATCH_SIZE, EPOCHS, DEBUG_EPOCHS, NUM_WORKERS, PIN_MEMORY, FROZEN_CNN, USE_CACHED_FEATURES, NUM_CLASSES
 
 
 def get_dataloader(split: str, debug_mode: bool, batch_size: int) -> DataLoader:
@@ -57,7 +57,7 @@ def get_dataloader(split: str, debug_mode: bool, batch_size: int) -> DataLoader:
     from dataset import WLASLDataset
     
     # create dataset instance
-    ds = WLASLDataset(JSON_PATH, VIDEO_DIR, split=split, use_cached_features=USE_CACHED_FEATURES)
+    ds = WLASLDataset(JSON_PATH, VIDEO_DIR, split=split, use_cached_features=USE_CACHED_FEATURES, num_classes=NUM_CLASSES)
     
     # create DataLoader with real data
     # shuffle=True: randomize order of samples (important for training)

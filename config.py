@@ -1,3 +1,6 @@
+from mock import NUM_MOCK_CHANNELS
+
+
 JSON_PATH = "data/WLASL_v0.3.json"
 VIDEO_DIR = "data/videos"
 FEATURE_FILE = "data/all_features.pt"
@@ -8,6 +11,10 @@ MODEL_FILENAME = f"model_epoch_{BEST_EPOCH}.pth"
 # ========== Configuration ==========
 # Debug mode: when True, uses fake data and doesn't save the model (for testing shapes)
 # Real mode: when False, uses real video data and saves the trained model
+
+# only take the top N most frequent classes
+NUM_CLASSES = 100
+
 
 # Default paths
 JSON_PATH = "data/WLASL_v0.3.json"  # Path to dataset metadata JSON file
