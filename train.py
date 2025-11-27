@@ -24,7 +24,7 @@ import json
 import os
 from utils import get_accuracy_counts
 from device import get_device
-from config import JSON_PATH, VIDEO_DIR, HISTORY_PATH, MODEL_DIR, LR, BATCH_SIZE, DEBUG_BATCH_SIZE, EPOCHS, DEBUG_EPOCHS, NUM_WORKERS, PIN_MEMORY
+from config import JSON_PATH, VIDEO_DIR, HISTORY_PATH, MODEL_DIR, LR, BATCH_SIZE, DEBUG_BATCH_SIZE, EPOCHS, DEBUG_EPOCHS, NUM_WORKERS, PIN_MEMORY, FROZEN_CNN, USE_CACHED_FEATURES
 
 
 def get_dataloader(split: str, debug_mode: bool, batch_size: int) -> DataLoader:
@@ -57,7 +57,7 @@ def get_dataloader(split: str, debug_mode: bool, batch_size: int) -> DataLoader:
     from dataset import WLASLDataset
     
     # create dataset instance
-    ds = WLASLDataset(JSON_PATH, VIDEO_DIR, split=split)
+    ds = WLASLDataset(JSON_PATH, VIDEO_DIR, split=split, use_cached_features=USE_CACHED_FEATURES)
     
     # create DataLoader with real data
     # shuffle=True: randomize order of samples (important for training)
@@ -100,7 +100,7 @@ def train(args):
     num_classes = NUM_MOCK_VIDEOS if debug_mode else len(train_loader.dataset.glosses)
     
     # initialize model (model and data must be on the same device)
-    model = ASLResNetLSTM(num_classes=num_classes).to(device)
+    model = ASLResNetLSTM(num_classes=num_classes, frozenCNN=FROZEN_CNN, expect_features=USE_CACHED_FEATURES).to(device)
     
     # Initialize Adam (adaptive learning rate optimizer)
     # Combines momentum and RMSprop updates
@@ -113,6 +113,7 @@ def train(args):
     # history tracking for plotting later
     history = {
         'train_loss': [],
+        'train_acc': [],
         'val_acc_top1': [],
         'val_acc_top5': [],
     }
@@ -132,6 +133,8 @@ def train(args):
 
         # used to compute average loss per epoch
         running_loss = 0.0
+
+        train_correct = train_total = 0
 
         for i, (inputs, labels) in enumerate(train_loader):
             # move data to the same device as the model
@@ -160,6 +163,12 @@ def train(args):
             optimizer.step()
 
             running_loss += loss.item()
+
+            with torch.no_grad():
+                # assuming get_accuracy_counts returns (top1_count, top5_count)
+                batch_acc_1, _ = get_accuracy_counts(outputs, labels) 
+                train_correct += batch_acc_1
+                train_total += labels.size(0)
             
             # print progress every 10 batches
             # loss.item() converts the tensor to a Python float
@@ -168,7 +177,9 @@ def train(args):
             
         # calculate and store average train loss for the epoch
         avg_train_loss = running_loss / len(train_loader)
+        avg_train_acc = 100 * train_correct / train_total
         history['train_loss'].append(avg_train_loss)
+        history['train_acc'].append(avg_train_acc)
         
         validate_and_checkpoint(model, val_loader, device, epoch, history, debug_mode)
 
