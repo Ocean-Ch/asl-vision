@@ -22,6 +22,7 @@ import argparse
 from mock import NUM_MOCK_VIDEOS
 import json
 import os
+from utils import get_accuracy_counts
 
 
 # ========== Configuration ==========
@@ -241,22 +242,15 @@ def validate_and_checkpoint(
             inputs, labels = inputs.to(device), labels.to(device)
             outputs = model(inputs)
 
-            # compute top1 and top5 accuracy
-
-            # maxk: (batch_size, 5) - indices of the top 5 predictions
-            _, maxk = torch.topk(outputs, 5, dim=1)
-
-            # labels_resize: (batch_size, 1) - true labels
-            labels_resize = labels.view(-1, 1)
-
-            # correct_matrix: (batch_size, 5) - correct_matrix[i, j] = 1 if the j-th prediction of the i-th sample is correct
-            correct_matrix = maxk == labels_resize
-
-            # total top1 correct is just the sum of the first column of the correct_matrix
-            top1_correct += correct_matrix[:, 0].sum().item()
-            # total top5 correct is the sum of all the correct predictions
-            top5_correct += correct_matrix.sum().item()
-            # total samples is the number of samples in the validation set
+            # compute top1 and top5 accuracy counts for this batch
+            # uses utility function to avoid code duplication
+            batch_top1, batch_top5 = get_accuracy_counts(outputs, labels)
+            
+            # accumulate counts across all batches
+            top1_correct += batch_top1
+            top5_correct += batch_top5
+            
+            # track total number of samples processed
             total_samples += labels.size(0)
 
     val_acc1 = 100 * top1_correct / total_samples

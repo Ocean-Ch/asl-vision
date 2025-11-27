@@ -20,6 +20,7 @@ from model import ASLResNetLSTM
 from dataset import WLASLDataset
 import os
 from train import JSON_PATH, VIDEO_DIR, MODEL_DIR, BATCH_SIZE
+from utils import get_accuracy_counts
 
 # ========== Configuration ==========
 # change this number to match the best epoch you see in your training logs
@@ -103,28 +104,13 @@ def evaluate() -> None:
             # outputs: raw logits - shape (batch_size, num_classes)
             outputs = model(inputs)
             
-            # calculate Top-1 and Top-5 predictions
-            # torch.topk returns the top k values and their indices
-            # _: top k values (we don't need these, only the indices)
-            # top5_preds: indices of top 5 predictions - shape (batch_size, 5)
-            _, top5_preds = torch.topk(outputs, 5, dim=1)
+            # calculate Top-1 and Top-5 accuracy counts for this batch
+            # uses utility function to avoid code duplication
+            batch_top1, batch_top5 = get_accuracy_counts(outputs, labels)
             
-            # reshape labels to compare with predictions
-            # labels_reshaped: shape (batch_size, 1) for broadcasting
-            labels_reshaped = labels.view(-1, 1)
-            
-            # create boolean matrix: True where prediction matches label
-            # correct_matrix: shape (batch_size, 5)
-            # correct_matrix[i, j] = True if the j-th top prediction for sample i matches the true label
-            correct_matrix = top5_preds == labels_reshaped
-            
-            # Top-1 accuracy: count matches in first column (top prediction)
-            # correct_matrix[:, 0] gives first column, sum() counts True values
-            top1_correct += correct_matrix[:, 0].sum().item()
-            
-            # Top-5 accuracy: count matches in any column (any of top 5 predictions)
-            # sum() counts all True values across all columns
-            top5_correct += correct_matrix.sum().item()
+            # accumulate counts across all batches
+            top1_correct += batch_top1
+            top5_correct += batch_top5
             
             # track total number of samples processed
             total_samples += labels.size(0)
