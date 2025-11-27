@@ -25,7 +25,7 @@ HISTORY_GRAPH_PATH = "results/history.png"
 LR = 1e-4                           # Learning rate
 
 # GPU config (tuned for my setup - 4070 Ti)
-BATCH_SIZE = 32
+BATCH_SIZE = 8
 DEBUG_BATCH_SIZE = 2
 EPOCHS = 100
 DEBUG_EPOCHS = 1
@@ -36,6 +36,6 @@ NUM_WORKERS = 0
 # Memory Config
 PIN_MEMORY = False
 
-FROZEN_CNN = True
+FROZEN_CNN = False
 
-USE_CACHED_FEATURES = True
+USE_CACHED_FEATURES = False

@@ -88,9 +88,13 @@ class WLASLDataset(Dataset):
 
         # filter for top N most frequent classes
         if num_classes is not None:
-            raw_data.sort(key=lambda x: len(x['instances']), reverse=True)
-            raw_data = raw_data[:num_classes]
-            print(f"🔍 Selected {num_classes} classes from {len(raw_data)} total classes (filtered by frequency)")
+            raw_data = filter_by_availability(
+                raw_data,
+                video_dir,
+                num_classes,
+                use_cached_features,
+                self.cached_features
+            )
             
         # create vocabulary: map each unique gloss to a numeric ID (dupes removed, sorted)
         self.glosses = sorted([entry['gloss'] for entry in raw_data])
@@ -241,3 +245,78 @@ class WLASLDataset(Dataset):
         # ===== CACHED FEATURES DISABLED =====
         frames = self.load_video_frames(item['video_path'], self.frames_per_clip)
         return frames, self.gloss_to_id[item['gloss']]
+
+
+def filter_by_availability(raw_data, video_dir, num_classes, use_cached, cached_features):
+    """
+    Scans the dataset to find the top N classes with the most VALID video files.
+    """
+    print(f"\n🕵️  Scanning {len(raw_data)} classes for valid video files...")
+    
+    class_stats = []
+
+    # 1. Count actual valid videos for every class
+    for entry in raw_data:
+        gloss = entry['gloss']
+        valid_count = 0
+        
+        for inst in entry['instances']:
+            video_id = inst['video_id']
+            path = os.path.normpath(os.path.join(video_dir, f"{video_id}.mp4"))
+            
+            is_valid = False
+            
+            if use_cached:
+                # Check dictionary lookup (fast) + content check
+                if path in cached_features:
+                    # check if tensor is not empty/zero
+                    if torch.sum(cached_features[path]) != 0:
+                        is_valid = True
+            else:
+                # Check disk (slower)
+                if os.path.exists(path):
+                    is_valid = True
+            
+            if is_valid:
+                valid_count += 1
+        
+        # Store tuple: (count, gloss, full_entry_data)
+        class_stats.append({
+            'count': valid_count,
+            'gloss': gloss,
+            'entry': entry
+        })
+
+    # 2. Sort by Count (Descending)
+    class_stats.sort(key=lambda x: x['count'], reverse=True)
+
+    # 3. Slice the Top N
+    top_n_stats = class_stats[:num_classes]
+    
+    # 4. Print Detailed Metrics
+    print(f"📊 Dataset Statistics (Top {num_classes} Classes):")
+    print(f"{'Rank':<6} {'Gloss':<20} {'Valid Videos':<15}")
+    print("-" * 45)
+    
+    # Print Top 5
+    for i in range(min(5, len(top_n_stats))):
+        item = top_n_stats[i]
+        print(f"#{i+1:<5} {item['gloss']:<20} {item['count']:<15}")
+        
+    if len(top_n_stats) > 10:
+        print(f"{'...':<6} {'...':<20} {'...':<15}")
+
+    # Print Bottom 5 (of the selected set)
+    start_idx = max(5, len(top_n_stats) - 5)
+    for i in range(start_idx, len(top_n_stats)):
+        item = top_n_stats[i]
+        print(f"#{i+1:<5} {item['gloss']:<20} {item['count']:<15}")
+    
+    print("-" * 45)
+    
+    total_videos = sum(x['count'] for x in top_n_stats)
+    print(f"✅ Total videos in this subset: {total_videos}")
+    print(f"📉 Cutoff threshold: Classes must have at least {top_n_stats[-1]['count']} videos.\n")
+
+    # Return only the raw data entries for the selected classes
+    return [x['entry'] for x in top_n_stats]
