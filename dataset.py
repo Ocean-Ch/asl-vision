@@ -87,7 +87,7 @@ class WLASLDataset(Dataset):
                 # only use videos from the specified split (train/val/test)
                 if inst['split'] == split:
                     video_id = inst['video_id']
-                    path = os.path.join(video_dir, f"{video_id}.mp4")
+                    path = os.path.normpath(os.path.join(video_dir, f"{video_id}.mp4"))
                     # only add if video file exists on disk
                     if os.path.exists(path):
                         num_videos += 1
