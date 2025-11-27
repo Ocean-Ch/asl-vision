@@ -14,6 +14,7 @@ MODEL_FILENAME = f"model_epoch_{BEST_EPOCH}.pth"
 
 # only take the top N most frequent classes
 NUM_CLASSES = 100
+FRAMES_PER_CLIP = 32
 
 
 # Default paths

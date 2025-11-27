@@ -35,7 +35,7 @@ class WLASLDataset(Dataset):
         self, 
         json_path: str, 
         video_dir: str, 
-        frames_per_clip: int = 32, 
+        frames_per_clip: int = config.FRAMES_PER_CLIP, 
         split: str = 'train',
         debug_mode: bool = False,
         use_cached_features: bool = True,

@@ -133,7 +133,7 @@ class ASLResNetLSTM(nn.Module):
             # extract features from each frame using MobileNetV2
             # torch.no_grad() disables gradient computation
             # since we're not training the CNN, we don't need gradients
-            with torch.set_grad_enabled(not self.expect_features):
+            with torch.set_grad_enabled(False):
                 # pass frames through MobileNetV2 feature extractor
                 # output: (b*t, 1280, 7, 7) - 1280 feature maps of size 7x7 per frame
                 features = self.feature_extractor(c_in)
