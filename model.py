@@ -23,7 +23,15 @@ class ASLResNetLSTM(nn.Module):
     
     Output shape: (batch, num_classes) - logits (raw scores) for each class
     """
-    def __init__(self, num_classes: int = 2000, lstm_hidden: int = 256, num_lstm_layers: int = 2, frozenCNN: bool = True):
+    def __init__(
+        self, 
+        num_classes: int = 2000, 
+        lstm_hidden: int = 256, 
+        num_lstm_layers: int = 2, 
+        frozenCNN: bool = True,
+        use_cached_features: bool = True,
+        expect_features: bool = True
+    ):
         """
         Initializes the model architecture.
         
@@ -36,15 +44,21 @@ class ASLResNetLSTM(nn.Module):
         # set up the module infrastructure (parameter tracking, etc.)
         super(ASLResNetLSTM, self).__init__()
         
+        # expect features: if True, the input is expected to be a tensor of shape (batch, frames, 1280)
+        # if False, the input is expected to be a tensor of shape (batch, frames, 3, 224, 224)
+        self.expect_features = expect_features
+        
         # ========== 1. CNN Feature Extractor (MobileNetV2) ==========
         # load pretrained MobileNetV2 model (lightweight CNN architecture)
         # weights='DEFAULT' loads ImageNet pretrained weights
+        # Note: the backbone will not be called if expect_features is True
         weights = models.MobileNet_V2_Weights.DEFAULT
         self.backbone = models.mobilenet_v2(weights=weights)
         
         # extract only the feature extraction part (conv layers)
         # MobileNetV2 has two parts: 'features' (conv layers) and 'classifier' (final FC layer)
         # only need 'features' since we'll add our own classifier
+        # Note: the backbone will not be called if expect_features is True
         self.feature_extractor = self.backbone.features 
         
         # freeze the CNN weights
@@ -87,8 +101,9 @@ class ASLResNetLSTM(nn.Module):
         Called automatically on model(inputs) or model.forward(inputs) call.
         
         Args:
-            x: Input tensor of shape (batch, frames, channels, height, width)
-               ex: (8, 32, 3, 224, 224) = 8 videos, 32 frames each, RGB images of 224x224
+            x:
+            - if expect_features is True, the input is expected to be a tensor of shape (batch, frames, 1280)
+            - if expect_features is False, the input is expected to be a tensor of shape (batch, frames, 3, 224, 224)
         
         Returns:
             Tensor of shape (Batch, num_classes) containing logits (raw scores) for each gloss class
@@ -100,41 +115,44 @@ class ASLResNetLSTM(nn.Module):
         4. process sequence through LSTM to capture temporal patterns
         5. use final frame's LSTM output for classification
         """
-        # Unpack input tensor dimensions
-        # b = batch size (number of videos in this batch)
-        # t = time/frames (number of frames per video)
-        # c = channels (3 for RGB)
-        # h = height, w = width
-        b, t, c, h, w = x.size()
-        
-        # Reshape: combine batch and time dimensions
-        # This allows us to process all frames through the CNN at once
-        # From (Batch, Frames, C, H, W) to (Batch*Frames, C, H, W)
-        # Example: (8, 32, 3, 224, 224) -> (256, 3, 224, 224)
-        # Now each frame is treated as a separate "image" in a larger batch
-        c_in = x.view(b * t, c, h, w)
-        
-        # extract features from each frame using MobileNetV2
-        # torch.no_grad() disables gradient computation
-        # since we're not training the CNN, we don't need gradients
-        with torch.no_grad():
-            # pass frames through MobileNetV2 feature extractor
-            # output: (b*t, 1280, 7, 7) - 1280 feature maps of size 7x7 per frame
-            features = self.feature_extractor(c_in)
+        if not self.expect_features:
+            # Unpack input tensor dimensions
+            # b = batch size (number of videos in this batch)
+            # t = time/frames (number of frames per video)
+            # c = channels (3 for RGB)
+            # h = height, w = width
+            b, t, c, h, w = x.size()
             
-            # global average pooling: reduce spatial dimensions
-            # (b*t, 1280, 7, 7) -> (b*t, 1280, 1, 1)
-            features = self.pool(features)
+            # Reshape: combine batch and time dimensions
+            # This allows us to process all frames through the CNN at once
+            # From (Batch, Frames, C, H, W) to (Batch*Frames, C, H, W)
+            # Example: (8, 32, 3, 224, 224) -> (256, 3, 224, 224)
+            # Now each frame is treated as a separate "image" in a larger batch
+            c_in = x.view(b * t, c, h, w)
             
-            # flatten: remove spatial dimensions, keep only feature dimension
-            # (b*t, 1280, 1, 1) -> (b*t, 1280)
-            # flatten(1) flattens dimensions starting from index 1 (keeps batch dimension)
-            features = features.flatten(1)
-            
-        # reshape back to sequence format for LSTM (batch, time, features)
-        # from (b*t, 1280) back to (b, t, 1280)
-        # -1 tells PyTorch to infer this dimension automatically
-        lstm_in = features.view(b, t, -1)
+            # extract features from each frame using MobileNetV2
+            # torch.no_grad() disables gradient computation
+            # since we're not training the CNN, we don't need gradients
+            with torch.set_grad_enabled(not self.expect_features):
+                # pass frames through MobileNetV2 feature extractor
+                # output: (b*t, 1280, 7, 7) - 1280 feature maps of size 7x7 per frame
+                features = self.feature_extractor(c_in)
+                
+                # global average pooling: reduce spatial dimensions
+                # (b*t, 1280, 7, 7) -> (b*t, 1280, 1, 1)
+                features = self.pool(features)
+                
+                # flatten: remove spatial dimensions, keep only feature dimension
+                # (b*t, 1280, 1, 1) -> (b*t, 1280)
+                # flatten(1) flattens dimensions starting from index 1 (keeps batch dimension)
+                features = features.flatten(1)
+                
+            # reshape back to sequence format for LSTM (batch, time, features)
+            # from (b*t, 1280) back to (b, t, 1280)
+            # -1 tells PyTorch to infer this dimension automatically
+            lstm_in = features.view(b, t, -1)
+        else:
+            lstm_in = x
         
         # lstm_out: output at each time step, shape (batch, time, lstm_hidden)
         # _: hidden state tuple (we don't need it here, so we use _ to ignore it)

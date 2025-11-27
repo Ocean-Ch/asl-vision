@@ -30,7 +30,15 @@ class WLASLDataset(Dataset):
         gloss_to_id (dict): map from gloss -> numeric ID
         transform: PyTorch transform pipeline for image preprocessing
     """
-    def __init__(self, json_path: str, video_dir: str, frames_per_clip: int = 32, split: str = 'train'):
+    def __init__(
+        self, 
+        json_path: str, 
+        video_dir: str, 
+        frames_per_clip: int = 32, 
+        split: str = 'train',
+        debug_mode: bool = False,
+        use_cached_features: bool = True
+    ):
         """
         Initialize the dataset by loading metadata and setting up preprocessing.
         
@@ -59,6 +67,7 @@ class WLASLDataset(Dataset):
         """
         self.video_dir = video_dir
         self.frames_per_clip = frames_per_clip
+        self.use_cached_features = use_cached_features
         
         # load JSON metadata file
         # contains entries with 'gloss' (sign language word) and 'instances' (video examples)
@@ -96,10 +105,15 @@ class WLASLDataset(Dataset):
         # create reverse mapping: gloss -> ID (e.g., "hello" -> 0, "thank you" -> 1)
         self.gloss_to_id = {g: i for i, g in enumerate(self.glosses)}
         
-        IMAGENET_MEAN = [0.485, 0.456, 0.406]
-        IMAGENET_STD = [0.229, 0.224, 0.225]
+        if self.use_cached_features:
+            self.cached_features = torch.load("data/all_features.pt")
+            # need to check if feature file exists
+            print(f"💾 Loaded {len(self.cached_features)} features into cache from disk")
+            return
         
         # set up image preprocessing pipeline
+        IMAGENET_MEAN = [0.485, 0.456, 0.406]
+        IMAGENET_STD = [0.229, 0.224, 0.225]
         self.transform = transforms.Compose([
             transforms.ToPILImage(),  # np array -> PIL Image (required for torchvision transforms)
             transforms.Resize((224, 224)),  # resize to 224x224 (standard size for pretrained models like MobileNet)
@@ -119,6 +133,41 @@ class WLASLDataset(Dataset):
         Required by PyTorch's Dataset interface to know how many samples are available.
         """
         return len(self.samples)
+
+    def load_video_frames(self, video_path: str, frames_per_clip: int) -> torch.Tensor:
+        """
+        Loads and processes frames from a video file at `video_path`.
+
+        Args:
+            video_path (str): Path to the video file.
+            frames_per_clip (int): Number of frames to sample from the video.
+
+        Returns:
+            torch.Tensor: Tensor of shape (frames_per_clip, 3, 224, 224).
+        """
+        cap = cv2.VideoCapture(video_path)
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+        # handle broken or empty videos
+        if total_frames < 1:
+            cap.release()
+            return torch.zeros((frames_per_clip, 3, 224, 224))
+
+        indices = np.linspace(0, total_frames - 1, frames_per_clip).astype(int)
+        frames = []
+
+        for i in indices:
+            cap.set(cv2.CAP_PROP_POS_FRAMES, i)
+            ret, frame = cap.read()
+            if ret:
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                frame = self.transform(frame)
+                frames.append(frame)
+            else:
+                frames.append(torch.zeros(3, 224, 224))
+
+        cap.release()
+        return torch.stack(frames)
 
     def __getitem__(self, idx: int) -> Tuple[torch.Tensor, int]:
         """
@@ -143,47 +192,8 @@ class WLASLDataset(Dataset):
         """
         item = self.samples[idx]
         
-        # open video file using OpenCV's VideoCapture
-        cap = cv2.VideoCapture(item['video_path'])
-        
-        # get total number of frames in the video for uniform sampling
-        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        
-        # handle broken or empty videos
-        # return a zero tensor if video is invalid
-        # shape: (frames, channels=3, height=224, width=224)
-        if total_frames < 1:
-            return torch.zeros((self.frames_per_clip, 3, 224, 224)), self.gloss_to_id[item['gloss']]
+        if self.use_cached_features:
+            return self.cached_features[item['video_path']], self.gloss_to_id[item['gloss']]
 
-        # uniform sampling to evenly distribute frame indices across the video
-        # np.linspace creates evenly spaced numbers from start to end
-        # ex: total_frames=100 and frames_per_clip=32, then indices = [0, 3, 6, 9, ...]
-        indices = np.linspace(0, total_frames - 1, self.frames_per_clip).astype(int)
-        frames = []
-        
-        # extract and process each sampled frame
-        for i in indices:
-            # seek to the specific frame position in the video
-            cap.set(cv2.CAP_PROP_POS_FRAMES, i)
-            
-            # read the frame at that position (ret = True -> frame read successfully)
-            ret, frame = cap.read()
-            if ret:
-                # OpenCV reads images in BGR, convert to RGB for PyTorch
-                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                # apply preprocessing: resize, normalize, convert to tensor
-                frame = self.transform(frame)
-                frames.append(frame)
-            else:
-                # if frame couldn't be read, add a zero tensor as placeholder
-                # shape: (channels=3, height=224, width=224)
-                frames.append(torch.zeros(3, 224, 224))
-        
-        # release video file to free up resources
-        cap.release()
-        
-        # stack all frames into a single tensor
-        # torch.stack combines a list of tensors along a new dimension
-        # shape: (frames_per_clip, 3, 224, 224)
-        # also return the numeric label ID for this video
-        return torch.stack(frames), self.gloss_to_id[item['gloss']]
+        frames = self.load_video_frames(item['video_path'], self.frames_per_clip)
+        return frames, self.gloss_to_id[item['gloss']]
