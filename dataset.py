@@ -66,6 +66,9 @@ class WLASLDataset(Dataset):
             raw_data = json.load(f)
             
         self.samples = []  # store all valid video samples
+
+        num_videos = 0
+        num_videos_not_found = 0
         
         # parse JSON to extract video paths and corresponding labels
         for entry in raw_data:
@@ -78,11 +81,13 @@ class WLASLDataset(Dataset):
                     path = os.path.join(video_dir, f"{video_id}.mp4")
                     # only add if video file exists on disk
                     if os.path.exists(path):
+                        num_videos += 1
                         self.samples.append({
                             'video_path': path,
                             'gloss': gloss
                         })
                     else:
+                        num_videos_not_found += 1
                         # log file not found
                         print(f"Video file not found: {path}")
 
@@ -104,6 +109,9 @@ class WLASLDataset(Dataset):
             # helps training by centering the data around 0 and scaling it
             transforms.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD)
         ])
+
+        print(f"[{split.upper()}] Loaded {num_videos} videos from {json_path}")
+        print(f"[{split.upper()}] However, {num_videos_not_found} videos were not found")
 
     def __len__(self):
         """

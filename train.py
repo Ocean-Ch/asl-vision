@@ -37,13 +37,16 @@ MODEL_DIR = "results/models"              # Path to save models
 LR = 1e-4                           # Learning rate
 
 # GPU config (tuned for my setup - 4070 Ti)
-BATCH_SIZE = 64
+BATCH_SIZE = 32
 DEBUG_BATCH_SIZE = 2
 EPOCHS = 15
 DEBUG_EPOCHS = 1
 
 # CPU config (tuned for my setup - 5800X3D)
-NUM_WORKERS = 8
+NUM_WORKERS = 4
+
+# Memory Config
+PIN_MEMORY = False
 
 def get_device() -> torch.device:
     """
@@ -102,7 +105,7 @@ def get_dataloader(split: str, debug_mode: bool, batch_size: int) -> DataLoader:
     # create DataLoader with real data
     # shuffle=True: randomize order of samples (important for training)
     # num_workers=4: use 4 parallel processes to load data
-    return DataLoader(ds, batch_size=batch_size, shuffle=True, num_workers=NUM_WORKERS, pin_memory=True)
+    return DataLoader(ds, batch_size=batch_size, shuffle=True, num_workers=NUM_WORKERS, pin_memory=PIN_MEMORY)
 
 def train(args):
     """
