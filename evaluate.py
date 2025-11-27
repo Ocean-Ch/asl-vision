@@ -19,8 +19,9 @@ from torch.utils.data import DataLoader
 from model import ASLResNetLSTM
 from dataset import WLASLDataset
 import os
-from train import JSON_PATH, VIDEO_DIR, MODEL_DIR, BATCH_SIZE
+from train import JSON_PATH, VIDEO_DIR, MODEL_DIR, BATCH_SIZE, NUM_WORKERS
 from utils import get_accuracy_counts
+from device import get_device
 
 # ========== Configuration ==========
 # change this number to match the best epoch you see in your training logs
@@ -42,15 +43,14 @@ def evaluate() -> None:
     The test split should only be used for final evaluation and not during
     training or hyperparameter tuning to ensure unbiased performance estimates.
     """
-    # select device (CUDA GPU if available, else CPU)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # select device
+    device = get_device()
     print(f"Running evaluation on {device}")
 
     # load TEST split (strictly for final report - not used during training)
     test_dataset = WLASLDataset(JSON_PATH, VIDEO_DIR, split='test')
     # shuffle=False: maintain consistent order for reproducibility
-    # num_workers=4: use 4 parallel processes to load data
-    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS)
     
     # determine number of classes from dataset vocabulary
     num_classes = len(test_dataset.glosses)

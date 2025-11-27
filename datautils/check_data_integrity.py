@@ -1,8 +1,8 @@
 import torch
 from dataset import WLASLDataset
 from torch.utils.data import DataLoader
-import numpy as np
 import sys
+from train import NUM_WORKERS
 
 # Config
 JSON_PATH = "data/WLASL_v0.3.json"
@@ -19,7 +19,7 @@ def check_integrity():
         print(f"❌ Failed to load dataset: {e}")
         return
 
-    dataloader = DataLoader(ds, batch_size=1, shuffle=False, num_workers=0)
+    dataloader = DataLoader(ds, batch_size=1, shuffle=False, num_workers=NUM_WORKERS)
     
     bad_videos = 0
     
