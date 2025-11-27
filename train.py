@@ -21,6 +21,7 @@ from model import ASLResNetLSTM
 import argparse
 from mock import NUM_MOCK_VIDEOS
 import json
+import os
 
 
 # ========== Configuration ==========
@@ -100,7 +101,7 @@ def get_dataloader(split: str, debug_mode: bool, batch_size: int) -> DataLoader:
     # create DataLoader with real data
     # shuffle=True: randomize order of samples (important for training)
     # num_workers=4: use 4 parallel processes to load data
-    return DataLoader(ds, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
+    return DataLoader(ds, batch_size=batch_size, shuffle=True, num_workers=NUM_WORKERS, pin_memory=True)
 
 def train(args):
     """
@@ -156,6 +157,11 @@ def train(args):
         'val_acc_top5': [],
     }
 
+    # ensure output dirs exist
+    if not debug_mode:
+        os.makedirs(MODEL_DIR, exist_ok=True)
+        os.makedirs(os.path.dirname(HISTORY_PATH), exist_ok=True)
+
     print(f"Starting Training for {epochs} epoch(s)...")
 
     # ========== Training Loop ==========
@@ -200,7 +206,11 @@ def train(args):
             if i % 10 == 0:
                 print(f"Epoch [{epoch+1}/{epochs}], Step [{i}], Loss: {loss.item():.4f}")
             
-            validate_and_checkpoint(model, val_loader, device, epoch, history, debug_mode)
+        # calculate and store average train loss for the epoch
+        avg_train_loss = running_loss / len(train_loader)
+        history['train_loss'].append(avg_train_loss)
+        
+        validate_and_checkpoint(model, val_loader, device, epoch, history, debug_mode)
 
     print("✅ Finished Successfully.")
     
@@ -208,7 +218,7 @@ def train(args):
     # state_dict() contains all the learned parameters (weights and biases)
     # so we can load the trained model later without retraining
     if not debug_mode:
-        save_path = "model_final.pth"
+        save_path = os.path.join(MODEL_DIR, "model_final.pth")
         torch.save(model.state_dict(), save_path)
         print(f"💾 Model saved to {save_path}")
 
@@ -258,10 +268,10 @@ def validate_and_checkpoint(
     print(f"-------------------------------- Epoch {epoch+1} Summary --------------------------------")
     print(f"Train Loss: {history['train_loss'][-1]:.4f} | Val Top-1: {val_acc1:.2f}% | Val Top-5: {val_acc5:.2f}%")
 
-    # save model checkpoint
     if not debug_mode:
-        torch.save(model.state_dict(), f"model_epoch_{epoch+1}.pth")
-        with open("history.json", "w") as f:
+        # save model checkpoint and history
+        torch.save(model.state_dict(), os.path.join(MODEL_DIR, f"model_epoch_{epoch+1}.pth"))
+        with open(HISTORY_PATH, "w") as f:
             json.dump(history, f)
 
 if __name__ == "__main__":
