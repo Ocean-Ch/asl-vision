@@ -20,6 +20,7 @@ from torch.utils.data import DataLoader
 from model import ASLResNetLSTM
 import argparse
 from mock import NUM_MOCK_VIDEOS
+import json
 
 
 # ========== Configuration ==========
@@ -27,14 +28,20 @@ from mock import NUM_MOCK_VIDEOS
 # Real mode: when False, uses real video data and saves the trained model
 
 # Default paths and hyperparameters
-JSON_PATH = "WLASL_v0.3.json"  # Path to dataset metadata JSON file
-VIDEO_DIR = "videos"            # Directory containing video files
-LR = 1e-4                       # Learning rate
+JSON_PATH = "data/WLASL_v0.3.json"  # Path to dataset metadata JSON file
+VIDEO_DIR = "data/videos"           # Directory containing video files
+HISTORY_PATH = "results/history.json"        # Path to save history
+MODEL_DIR = "results/models"              # Path to save models
+LR = 1e-4                           # Learning rate
 
-BATCH_SIZE = 8
+# GPU config (tuned for my setup - 4070 Ti)
+BATCH_SIZE = 64
 DEBUG_BATCH_SIZE = 2
-EPOCHS = 10
+EPOCHS = 15
 DEBUG_EPOCHS = 1
+
+# CPU config (tuned for my setup - 5800X3D)
+NUM_WORKERS = 8
 
 def get_device() -> torch.device:
     """
@@ -93,7 +100,7 @@ def get_dataloader(split: str, debug_mode: bool, batch_size: int) -> DataLoader:
     # create DataLoader with real data
     # shuffle=True: randomize order of samples (important for training)
     # num_workers=4: use 4 parallel processes to load data
-    return DataLoader(ds, batch_size=batch_size, shuffle=True, num_workers=4)
+    return DataLoader(ds, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
 
 def train(args):
     """
@@ -122,6 +129,9 @@ def train(args):
 
     # load training data
     train_loader = get_dataloader('train', debug_mode, batch_size)
+
+    # load validation data (for monitoring loss during training)
+    val_loader = get_dataloader('val', debug_mode, batch_size)
     
     # determine number of classes (sign language words)
     # debug mode: assume 10 classes (matches fake data)
@@ -138,13 +148,24 @@ def train(args):
     # CrossEntropyLoss since we are doing multi-class classification
     criterion = nn.CrossEntropyLoss()
 
-    print(f"Starting Training for {epochs} epoch(s)...")
     
+    # history tracking for plotting later
+    history = {
+        'train_loss': [],
+        'val_acc_top1': [],
+        'val_acc_top5': [],
+    }
+
+    print(f"Starting Training for {epochs} epoch(s)...")
+
     # ========== Training Loop ==========
     # epoch = one complete pass through the entire dataset
     for epoch in range(epochs):
         # set model to training mode to enable dropout and batch norm
         model.train()
+
+        # used to compute average loss per epoch
+        running_loss = 0.0
 
         for i, (inputs, labels) in enumerate(train_loader):
             # move data to the same device as the model
@@ -171,11 +192,15 @@ def train(args):
             # uses computed gradients to adjust weights in the direction that reduces loss
             # the optimizer (Adam) determines the step size based on learning rate and gradients
             optimizer.step()
+
+            running_loss += loss.item()
             
             # print progress every 10 batches
             # loss.item() converts the tensor to a Python float
             if i % 10 == 0:
                 print(f"Epoch [{epoch+1}/{epochs}], Step [{i}], Loss: {loss.item():.4f}")
+            
+            validate_and_checkpoint(model, val_loader, device, epoch, history, debug_mode)
 
     print("✅ Finished Successfully.")
     
@@ -186,6 +211,58 @@ def train(args):
         save_path = "model_final.pth"
         torch.save(model.state_dict(), save_path)
         print(f"💾 Model saved to {save_path}")
+
+def validate_and_checkpoint(
+    model: nn.Module,
+    val_loader: DataLoader,
+    device: torch.device,
+    epoch: int,
+    history: dict,
+    debug_mode: bool = False
+) -> None:
+    """
+    Validate the model and save checkpoints.
+    """
+    model.eval()
+    top1_correct, top5_correct, total_samples = 0, 0, 0
+    
+    with torch.no_grad():
+        for inputs, labels in val_loader:
+            inputs, labels = inputs.to(device), labels.to(device)
+            outputs = model(inputs)
+
+            # compute top1 and top5 accuracy
+
+            # maxk: (batch_size, 5) - indices of the top 5 predictions
+            _, maxk = torch.topk(outputs, 5, dim=1)
+
+            # labels_resize: (batch_size, 1) - true labels
+            labels_resize = labels.view(-1, 1)
+
+            # correct_matrix: (batch_size, 5) - correct_matrix[i, j] = 1 if the j-th prediction of the i-th sample is correct
+            correct_matrix = maxk == labels_resize
+
+            # total top1 correct is just the sum of the first column of the correct_matrix
+            top1_correct += correct_matrix[:, 0].sum().item()
+            # total top5 correct is the sum of all the correct predictions
+            top5_correct += correct_matrix.sum().item()
+            # total samples is the number of samples in the validation set
+            total_samples += labels.size(0)
+
+    val_acc1 = 100 * top1_correct / total_samples
+    val_acc5 = 100 * top5_correct / total_samples
+
+    history['val_acc_top1'].append(val_acc1)
+    history['val_acc_top5'].append(val_acc5)
+
+    print(f"-------------------------------- Epoch {epoch+1} Summary --------------------------------")
+    print(f"Train Loss: {history['train_loss'][-1]:.4f} | Val Top-1: {val_acc1:.2f}% | Val Top-5: {val_acc5:.2f}%")
+
+    # save model checkpoint
+    if not debug_mode:
+        torch.save(model.state_dict(), f"model_epoch_{epoch+1}.pth")
+        with open("history.json", "w") as f:
+            json.dump(history, f)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Train ASL Recognition Model')

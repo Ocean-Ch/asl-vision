@@ -23,7 +23,7 @@ class ASLResNetLSTM(nn.Module):
     
     Output shape: (batch, num_classes) - logits (raw scores) for each class
     """
-    def __init__(self, num_classes: int = 2000, lstm_hidden: int = 256, num_lstm_layers: int = 2):
+    def __init__(self, num_classes: int = 2000, lstm_hidden: int = 256, num_lstm_layers: int = 2, frozenCNN: bool = True):
         """
         Initializes the model architecture.
         
@@ -49,7 +49,7 @@ class ASLResNetLSTM(nn.Module):
         
         # freeze the CNN weights
         for param in self.feature_extractor.parameters():
-            param.requires_grad = False
+            param.requires_grad = not frozenCNN
             
         # global average pooling: reduces spatial dimensions from (7, 7) to (1, 1)
         # converts the 2D feature maps into 1D feature vectors
