@@ -24,30 +24,8 @@ import json
 import os
 from utils import get_accuracy_counts
 from device import get_device
+from config import JSON_PATH, VIDEO_DIR, HISTORY_PATH, MODEL_DIR, LR, BATCH_SIZE, DEBUG_BATCH_SIZE, EPOCHS, DEBUG_EPOCHS, NUM_WORKERS, PIN_MEMORY
 
-
-# ========== Configuration ==========
-# Debug mode: when True, uses fake data and doesn't save the model (for testing shapes)
-# Real mode: when False, uses real video data and saves the trained model
-
-# Default paths and hyperparameters
-JSON_PATH = "data/WLASL_v0.3.json"  # Path to dataset metadata JSON file
-VIDEO_DIR = "data/videos"           # Directory containing video files
-HISTORY_PATH = "results/history.json"        # Path to save history
-MODEL_DIR = "results/models"              # Path to save models
-LR = 1e-4                           # Learning rate
-
-# GPU config (tuned for my setup - 4070 Ti)
-BATCH_SIZE = 32
-DEBUG_BATCH_SIZE = 2
-EPOCHS = 15
-DEBUG_EPOCHS = 1
-
-# CPU config (tuned for my setup - 5800X3D)
-NUM_WORKERS = 0
-
-# Memory Config
-PIN_MEMORY = False
 
 def get_dataloader(split: str, debug_mode: bool, batch_size: int) -> DataLoader:
     """

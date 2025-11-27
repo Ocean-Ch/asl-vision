@@ -6,6 +6,7 @@ import os
 import numpy as np
 from torchvision import transforms
 from typing import Tuple
+import config
 
 
 class WLASLDataset(Dataset):
@@ -68,6 +69,16 @@ class WLASLDataset(Dataset):
         self.video_dir = video_dir
         self.frames_per_clip = frames_per_clip
         self.use_cached_features = use_cached_features
+
+        # load cache if enabled
+        self.cached_features = {}
+        if self.use_cached_features:
+            print(f"💾 Loading cached features from {config.FEATURE_FILE}...")
+            if os.path.exists(config.FEATURE_FILE):
+                self.cached_features = torch.load(config.FEATURE_FILE)
+                print(f"💾 Loaded {len(self.cached_features)} features into cache from disk")
+            else:
+                raise FileNotFoundError(f"Feature file not found: {config.FEATURE_FILE}, run extract_to_memory.py to create it")
         
         # load JSON metadata file
         # contains entries with 'gloss' (sign language word) and 'instances' (video examples)
@@ -78,6 +89,7 @@ class WLASLDataset(Dataset):
 
         num_videos = 0
         num_videos_not_found = 0
+        num_dead_videos = 0 # videos that are not found or are empty
         
         # parse JSON to extract video paths and corresponding labels
         for entry in raw_data:
@@ -87,7 +99,26 @@ class WLASLDataset(Dataset):
                 # only use videos from the specified split (train/val/test)
                 if inst['split'] == split:
                     video_id = inst['video_id']
+                    # need to normalize path for windows compatibility
                     path = os.path.normpath(os.path.join(video_dir, f"{video_id}.mp4"))
+
+                    # if cached features are enabled, use them to check if the video is valid
+                    if self.use_cached_features:
+                        if path in self.cached_features:
+                            tensor = self.cached_features[path]
+                            if torch.sum(tensor) == 0:
+                                num_dead_videos += 1
+                                continue
+                            self.samples.append({
+                                'video_path': path,
+                                'gloss': gloss
+                            })
+                            num_videos += 1
+                        else:
+                            num_videos_not_found += 1
+                        continue
+
+                    # ===== CACHED FEATURES DISABLED =====
                     # only add if video file exists on disk
                     if os.path.exists(path):
                         num_videos += 1
@@ -106,9 +137,12 @@ class WLASLDataset(Dataset):
         self.gloss_to_id = {g: i for i, g in enumerate(self.glosses)}
         
         if self.use_cached_features:
-            self.cached_features = torch.load("data/all_features.pt")
+            self.cached_features = torch.load(config.FEATURE_FILE)
             # need to check if feature file exists
             print(f"💾 Loaded {len(self.cached_features)} features into cache from disk")
+            print(f"[{split.upper()}] Loaded {num_videos} videos from {json_path}")
+            print(f"[{split.upper()}] Of which, {num_videos_not_found} videos were not found")
+            print(f"[{split.upper()}] Of which, {num_dead_videos} videos were dead")
             return
         
         # set up image preprocessing pipeline
@@ -195,5 +229,6 @@ class WLASLDataset(Dataset):
         if self.use_cached_features:
             return self.cached_features[item['video_path']], self.gloss_to_id[item['gloss']]
 
+        # ===== CACHED FEATURES DISABLED =====
         frames = self.load_video_frames(item['video_path'], self.frames_per_clip)
         return frames, self.gloss_to_id[item['gloss']]

@@ -2,9 +2,7 @@ import cv2
 import os
 import glob
 from concurrent.futures import ThreadPoolExecutor
-
-# CONFIG
-VIDEO_DIR = "data/videos"
+from config import VIDEO_DIR
 
 def check_video(path):
     """Returns 1 if valid, 0 if corrupt"""

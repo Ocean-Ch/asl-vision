@@ -19,14 +19,10 @@ from torch.utils.data import DataLoader
 from model import ASLResNetLSTM
 from dataset import WLASLDataset
 import os
-from train import JSON_PATH, VIDEO_DIR, MODEL_DIR, BATCH_SIZE, NUM_WORKERS
+from config import JSON_PATH, VIDEO_DIR, MODEL_DIR, BATCH_SIZE, NUM_WORKERS
 from utils import get_accuracy_counts
 from device import get_device
-
-# ========== Configuration ==========
-# change this number to match the best epoch you see in your training logs
-BEST_EPOCH = 15 
-MODEL_FILENAME = f"model_epoch_{BEST_EPOCH}.pth"
+import config
 
 def evaluate() -> None:
     """
@@ -60,7 +56,7 @@ def evaluate() -> None:
     
     # construct full path to model checkpoint
     # example: results/models/model_epoch_15.pth
-    weight_path = os.path.join(MODEL_DIR, MODEL_FILENAME)
+    weight_path = os.path.join(MODEL_DIR, config.MODEL_FILENAME)
     
     # load trained weights from checkpoint
     if os.path.exists(weight_path):

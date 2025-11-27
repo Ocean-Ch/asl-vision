@@ -6,11 +6,9 @@ from dataset import WLASLDataset
 import os
 from tqdm import tqdm
 from device import get_device
+import config
 
 # CONFIG
-DATA_PATH = "data/WLASL_v0.3.json"
-VIDEO_DIR = "data/videos"
-OUTPUT_FILE = "data/all_features.pt"
 DEVICE = get_device()
 
 class FeatureExtractor(nn.Module):
@@ -46,7 +44,7 @@ def extract():
 
     for split in ['train', 'val', 'test']:
         print(f"\nProcessing {split}...")
-        ds = WLASLDataset(DATA_PATH, VIDEO_DIR, split=split, frames_per_clip=32, use_cached_features=False)
+        ds = WLASLDataset(config.JSON_PATH, config.VIDEO_DIR, split=split, frames_per_clip=32, use_cached_features=False)
         
         # num_workers=0 is crucial for Windows/OpenCV stability
         loader = DataLoader(ds, batch_size=32, shuffle=False, num_workers=0)
@@ -78,8 +76,8 @@ def extract():
                 
             global_idx += b
 
-    print(f"💾 Saving {len(feature_cache)} videos to {OUTPUT_FILE}...")
-    torch.save(feature_cache, OUTPUT_FILE)
+    print(f"💾 Saving {len(feature_cache)} videos to {config.FEATURE_FILE}...")
+    torch.save(feature_cache, config.FEATURE_FILE)
     print("✅ Features saved")
 
 if __name__ == "__main__":
