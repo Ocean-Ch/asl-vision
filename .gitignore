@@ -9,3 +9,6 @@ videos/
 *.pth
 *.pt
 wandb/
+*.zip
+venv
+data
