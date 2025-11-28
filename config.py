@@ -40,3 +40,7 @@ PIN_MEMORY = False
 FROZEN_CNN = False
 
 USE_CACHED_FEATURES = False
+
+# MS-ASL Dataset Configuration
+MSASL_TRAIN_JSON = "data/MS-ASL_train.json"  # Path to MS-ASL train JSON file
+MSASL_OUTPUT_DIR = "data/msasl_100_videos"   # Output directory for downloaded MS-ASL videos
