@@ -56,13 +56,24 @@ def download_msasl_100():
             
         print(f"Downloading {video_id} ({row['text']})...")
         
-        # We use yt-dlp to download AND ffmpeg to trim specifically to the sign
-        # This prevents downloading the whole 10-minute video
+        if not url.startswith(("http://", "https://")):
+            url = "https://" + url
+
+
+        # Quote it so PowerShell doesn't glob the asterisk
+        section = f"*{start_time}-{end_time}"
+
         cmd = [
             "yt-dlp",
-            "--force-keyframes-at-cuts", 
-            "--download-sections", f"*{start_time}-{end_time}",
-            "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+            "--force-keyframes-at-cuts",
+            "--download-sections", section,
+
+            # Prefer 720p video; fallback to best available
+            "-f", "bv*[height=720]/bv*+ba/b[height=720]/b",
+
+            "--no-audio",                 # strip audio track completely
+            "--remux-video", "mp4",       # ensure MP4 output
+
             "-o", output_path,
             url
         ]
