@@ -39,7 +39,8 @@ class WLASLDataset(Dataset):
         split: str = 'train',
         debug_mode: bool = False,
         use_cached_features: bool = True,
-        num_classes: int = None
+        num_classes: int = None,
+        augment: bool = config.AUGMENT_ENABLED
     ):
         """
         Initialize the dataset by loading metadata and setting up preprocessing.
@@ -70,6 +71,8 @@ class WLASLDataset(Dataset):
         self.video_dir = video_dir
         self.frames_per_clip = frames_per_clip
         self.use_cached_features = use_cached_features
+        # only augment data if split is train, and if augment is enabled
+        self.augment = augment and split == 'train'
 
         # load cache if enabled
         self.cached_features = {}
@@ -216,35 +219,73 @@ class WLASLDataset(Dataset):
         cap.release()
         return torch.stack(frames)
 
+
     def __getitem__(self, idx: int) -> Tuple[torch.Tensor, int]:
         """
         Loads and returns a single video sample.
         Called automatically by DataLoader for each sample in a batch.
-        
-        Args:
-            idx (int): Index of the sample to retrieve
-        
-        Returns:
-            tuple: (video_tensor, label_id)
-                - video_tensor: PyTorch tensor of shape (frames, 3, 224, 224)
-                  representing the video frames (uniformly sampled)
-                - label_id: Integer ID of the sign language word (gloss)
-        
-        Process:
-        1. Open video file using OpenCV
-        2. Uniformly sample frames across the video
-        3. Apply self.transform to each frame (resize, normalize)
-        4. Flatten frames into a single tensor
-        5. Return frames tensor and corresponding label ID
         """
         item = self.samples[idx]
         
         if self.use_cached_features:
-            return self.cached_features[item['video_path']], self.gloss_to_id[item['gloss']]
+            # Load the cached features
+            features = self.cached_features[item['video_path']]
+            
+            # Apply speed augmentation if enabled
+            if self.augment:
+                features = self._apply_speed_augmentation(features)
+
+            return features, self.gloss_to_id[item['gloss']]
 
         # ===== CACHED FEATURES DISABLED =====
         frames = self.load_video_frames(item['video_path'], self.frames_per_clip)
         return frames, self.gloss_to_id[item['gloss']]
+
+    def _apply_speed_augmentation(self, features: torch.Tensor) -> torch.Tensor:
+        """
+        Applies speed augmentation (temporal resampling) to video features.
+        
+        This augmentation randomly changes the playback speed of the video by:
+        1. Choosing a random speed factor (0.5x to 1.5x)
+        2. Resampling frames using linear interpolation
+        3. Padding or truncating to match the required frame count
+        
+        Args:
+            features (torch.Tensor): Input features tensor of shape (num_frames, feature_dim)
+            
+        Returns:
+            torch.Tensor: Augmented features tensor of shape (frames_per_clip, feature_dim)
+        """
+        # 1. Choose a random speed factor (0.5x to 1.5x)
+        # < 1.0 means fast (fewer frames), > 1.0 means slow (more frames)
+        speed_factor = np.random.uniform(0.5, 1.5)
+        
+        # 2. Determine the new length
+        original_len = features.shape[0]
+        target_len = int(original_len * speed_factor)
+        
+        # Ensure we have at least a few frames
+        target_len = max(5, target_len)
+        
+        # 3. Resample using linear indices
+        # np.linspace gives us `target_len` evenly spaced indices from 0 to original_len-1
+        indices = np.linspace(0, original_len - 1, target_len).astype(int)
+        features = features[indices]
+        
+        # 4. Pad or Truncate to match self.frames_per_clip
+        # This is CRITICAL because DataLoader requires consistent batch shapes
+        current_len = features.shape[0]
+        
+        if current_len > self.frames_per_clip:
+            # Truncate: take the first N frames
+            features = features[:self.frames_per_clip]
+        elif current_len < self.frames_per_clip:
+            # Pad: append zeros to the end
+            padding_len = self.frames_per_clip - current_len
+            padding = torch.zeros((padding_len, features.shape[1]))
+            features = torch.cat((features, padding), dim=0)
+        
+        return features
 
 
 def filter_by_availability(raw_data, video_dir, num_classes, use_cached, cached_features):
