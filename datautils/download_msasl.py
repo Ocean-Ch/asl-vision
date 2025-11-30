@@ -42,6 +42,9 @@ def download_msasl_100():
     
     print(f"Total videos to download: {len(df_filtered)}")
     
+    downloaded_count = 0
+    failed_count = 0
+    
     for index, row in df_filtered.iterrows():
         url = row['url']
         start_time = row['start_time']
@@ -52,6 +55,7 @@ def download_msasl_100():
         output_path = os.path.join(MSASL_OUTPUT_DIR, f"{video_id}.mp4")
         
         if os.path.exists(output_path):
+            downloaded_count += 1
             continue
             
         print(f"Downloading {video_id} ({row['text']})...")
@@ -80,8 +84,15 @@ def download_msasl_100():
         
         try:
             subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            downloaded_count += 1
         except Exception as e:
             print(f"Failed {video_id}: {e}")
+            failed_count += 1
+    
+    print(f"\nDownload summary:")
+    print(f"  Successfully downloaded: {downloaded_count}")
+    print(f"  Failed to download: {failed_count}")
+    print(f"  Total processed: {downloaded_count + failed_count}")
 
 
 if __name__ == "__main__":
