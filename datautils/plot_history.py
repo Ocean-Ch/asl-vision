@@ -40,7 +40,7 @@ def plot_history(file_path: str = config.HISTORY_PATH):
         x_vals = range(1, len(values) + 1)
         ax.plot(x_vals, values, marker='s', label=name)
 
-    ax.set_title("Validation Accuracy (%)")
+    ax.set_title("Training vs. Validation Accuracy (Top-1 and Top-5) (%)")
     ax.set_ylabel("Accuracy (%)")
     ax.set_xlabel("Epochs")
     ax.legend()
