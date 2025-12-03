@@ -1,7 +1,5 @@
 from mock import NUM_MOCK_CHANNELS
 
-
-JSON_PATH = "data/WLASL_v0.3.json"
 VIDEO_DIR = "data/videos"
 FEATURE_FILE = "data/all_features.pt"
 
@@ -18,7 +16,9 @@ FRAMES_PER_CLIP = 32
 
 
 # Default paths
-JSON_PATH = "data/WLASL_v0.3.json"  # Path to dataset metadata JSON file
+TRAIN_JSON_PATH = "data/resplit/train_top_100.json"  # Path to dataset metadata JSON file
+VAL_JSON_PATH = "data/resplit/val_top_100.json"  # Path to dataset metadata JSON file
+TEST_JSON_PATH = "data/resplit/test_top_100.json"  # Path to dataset metadata JSON file
 VIDEO_DIR = "data/videos"           # Directory containing video files
 HISTORY_PATH = "results/history.json"        # Path to save history
 MODEL_DIR = "results/models"              # Path to save models

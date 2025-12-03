@@ -19,7 +19,7 @@ from torch.utils.data import DataLoader
 from model import ASLResNetLSTM
 from dataset import WLASLDataset
 import os
-from config import JSON_PATH, VIDEO_DIR, MODEL_DIR, BATCH_SIZE, NUM_WORKERS
+from config import TRAIN_JSON_PATH, VIDEO_DIR, MODEL_DIR, BATCH_SIZE, NUM_WORKERS
 from utils import get_accuracy_counts
 from device import get_device
 import config
@@ -44,7 +44,7 @@ def evaluate() -> None:
     print(f"Running evaluation on {device}")
 
     # load TEST split (strictly for final report - not used during training)
-    test_dataset = WLASLDataset(JSON_PATH, VIDEO_DIR, split='test')
+    test_dataset = WLASLDataset(TRAIN_JSON_PATH, VIDEO_DIR, split='test')
     # shuffle=False: maintain consistent order for reproducibility
     test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS)
     

@@ -44,7 +44,7 @@ def extract():
 
     for split in ['train', 'val', 'test']:
         print(f"\nProcessing {split}...")
-        ds = WLASLDataset(config.JSON_PATH, config.VIDEO_DIR, split=split, frames_per_clip=32, use_cached_features=False)
+        ds = WLASLDataset(config.TRAIN_JSON_PATH, config.VIDEO_DIR, split=split, frames_per_clip=32, use_cached_features=False)
         
         # num_workers=0 is crucial for Windows/OpenCV stability
         loader = DataLoader(ds, batch_size=32, shuffle=False, num_workers=0)

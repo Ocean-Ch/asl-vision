@@ -6,7 +6,7 @@ import argparse
 import config
 
 def analyze_dataset(
-    json_path: str = config.JSON_PATH,
+    json_path: str = config.TRAIN_JSON_PATH,
     video_dir: str = config.VIDEO_DIR,
     top_n: int = config.NUM_CLASSES):
     """
@@ -127,7 +127,7 @@ def plot_distribution_histogram(stats):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Plot WLASL Dataset Health")
-    parser.add_argument("--json_path", type=str, default=config.JSON_PATH, help="Path to WLASL_v0.3.json")
+    parser.add_argument("--json_path", type=str, default=config.TRAIN_JSON_PATH, help="Path to WLASL_v0.3.json")
     parser.add_argument("--video_dir", type=str, default=config.VIDEO_DIR, help="Path to the videos folder")
     parser.add_argument("--top", type=int, default=config.NUM_CLASSES, help="Number of top classes to plot")
     

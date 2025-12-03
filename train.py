@@ -24,8 +24,7 @@ import json
 import os
 from utils import get_accuracy_counts
 from device import get_device
-from config import JSON_PATH, VIDEO_DIR, HISTORY_PATH, MODEL_DIR, LR, BATCH_SIZE, DEBUG_BATCH_SIZE, EPOCHS, DEBUG_EPOCHS, NUM_WORKERS, PIN_MEMORY, FROZEN_CNN, USE_CACHED_FEATURES, NUM_CLASSES, WEIGHT_DECAY
-
+import config
 
 def get_dataloader(split: str, debug_mode: bool, batch_size: int) -> DataLoader:
     """
@@ -55,13 +54,20 @@ def get_dataloader(split: str, debug_mode: bool, batch_size: int) -> DataLoader:
     # real mode: load actual video dataset
     # Import here to avoid errors if OpenCV/video libraries aren't available in debug mode
     from dataset import WLASLDataset
+
+    if split == 'train':
+        json_path = config.TRAIN_JSON_PATH
+    elif split == 'val':
+        json_path = config.VAL_JSON_PATH
+    elif split == 'test':
+        json_path = config.TEST_JSON_PATH
     
     # create dataset instance
-    ds = WLASLDataset(JSON_PATH, VIDEO_DIR, split=split, use_cached_features=USE_CACHED_FEATURES, num_classes=NUM_CLASSES)
+    ds = WLASLDataset(json_path, config.VIDEO_DIR, split=split, use_cached_features=config.USE_CACHED_FEATURES, num_classes=None)
     
     # create DataLoader with real data
     # shuffle=True: randomize order of samples (important for training)
-    return DataLoader(ds, batch_size=batch_size, shuffle=True, num_workers=NUM_WORKERS, pin_memory=PIN_MEMORY)
+    return DataLoader(ds, batch_size=batch_size, shuffle=True, num_workers=config.NUM_WORKERS, pin_memory=config.PIN_MEMORY)
 
 def train(args):
     """
@@ -83,8 +89,8 @@ def train(args):
     
     # adjust hyperparameters based on mode
     # debug mode uses smaller values for faster testing
-    batch_size = DEBUG_BATCH_SIZE if debug_mode else BATCH_SIZE
-    epochs = DEBUG_EPOCHS if debug_mode else EPOCHS
+    batch_size = config.DEBUG_BATCH_SIZE if debug_mode else config.BATCH_SIZE
+    epochs = config.DEBUG_EPOCHS if debug_mode else config.EPOCHS
 
     print(f"🚀 Running on {device}. Debug Mode: {debug_mode}")
 
@@ -100,11 +106,11 @@ def train(args):
     num_classes = NUM_MOCK_VIDEOS if debug_mode else len(train_loader.dataset.glosses)
     
     # initialize model (model and data must be on the same device)
-    model = ASLResNetLSTM(num_classes=num_classes, frozenCNN=FROZEN_CNN, expect_features=USE_CACHED_FEATURES).to(device)
+    model = ASLResNetLSTM(num_classes=num_classes, frozenCNN=config.FROZEN_CNN, expect_features=config.USE_CACHED_FEATURES).to(device)
     
     # Initialize Adam (adaptive learning rate optimizer)
     # Combines momentum and RMSprop updates
-    optimizer = optim.Adam(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
+    optimizer = optim.Adam(model.parameters(), lr=config.LR, weight_decay=config.WEIGHT_DECAY)
     
     # CrossEntropyLoss since we are doing multi-class classification
     criterion = nn.CrossEntropyLoss()
@@ -120,8 +126,8 @@ def train(args):
 
     # ensure output dirs exist
     if not debug_mode:
-        os.makedirs(MODEL_DIR, exist_ok=True)
-        os.makedirs(os.path.dirname(HISTORY_PATH), exist_ok=True)
+        os.makedirs(config.MODEL_DIR, exist_ok=True)
+        os.makedirs(os.path.dirname(config.HISTORY_PATH), exist_ok=True)
 
     print(f"Starting Training for {epochs} epoch(s)...")
 
@@ -189,7 +195,7 @@ def train(args):
     # state_dict() contains all the learned parameters (weights and biases)
     # so we can load the trained model later without retraining
     if not debug_mode:
-        save_path = os.path.join(MODEL_DIR, "model_final.pth")
+        save_path = os.path.join(config.MODEL_DIR, "model_final.pth")
         torch.save(model.state_dict(), save_path)
         print(f"💾 Model saved to {save_path}")
 
@@ -234,8 +240,8 @@ def validate_and_checkpoint(
 
     if not debug_mode:
         # save model checkpoint and history
-        torch.save(model.state_dict(), os.path.join(MODEL_DIR, f"model_epoch_{epoch+1}.pth"))
-        with open(HISTORY_PATH, "w") as f:
+        torch.save(model.state_dict(), os.path.join(config.MODEL_DIR, f"model_epoch_{epoch+1}.pth"))
+        with open(config.HISTORY_PATH, "w") as f:
             json.dump(history, f)
 
 if __name__ == "__main__":
