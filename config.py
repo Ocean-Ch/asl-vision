@@ -48,3 +48,9 @@ AUGMENT_ENABLED = True
 # MS-ASL Dataset Configuration
 MSASL_TRAIN_JSON = "data/MSASL_train.json"  # Path to MS-ASL train JSON file
 MSASL_OUTPUT_DIR = "data/msasl_100_videos"   # Output directory for downloaded MS-ASL videos
+
+# Dataset Resplitting Configuration
+RESPLIT_OUTPUT_DIR = "data/resplit"  # Directory to save resplit JSON files
+TRAIN_SPLIT_PERCENT = 0.7  # Percentage of videos for training set
+VAL_SPLIT_PERCENT = 0.15   # Percentage of videos for validation set
+TEST_SPLIT_PERCENT = 0.15  # Percentage of videos for test set
