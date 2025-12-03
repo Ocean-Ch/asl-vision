@@ -256,9 +256,17 @@ class WLASLDataset(Dataset):
         Returns:
             torch.Tensor: Augmented features tensor of shape (frames_per_clip, feature_dim)
         """
+        if np.random.random() < 0.5:
+            return features
+        
         # 1. Choose a random speed factor (0.5x to 1.5x)
         # < 1.0 means fast (fewer frames), > 1.0 means slow (more frames)
-        speed_factor = np.random.uniform(0.5, 1.5)
+        speed_factor = np.random.uniform(0.5, 1.2)
+
+        # [NEW] Add Gaussian Noise (Jitter)
+        # This prevents the model from memorizing exact feature values
+        noise = torch.randn_like(features) * 0.02 # 2% noise
+        features = features + noise
         
         # 2. Determine the new length
         original_len = features.shape[0]

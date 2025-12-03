@@ -24,7 +24,7 @@ import json
 import os
 from utils import get_accuracy_counts
 from device import get_device
-from config import JSON_PATH, VIDEO_DIR, HISTORY_PATH, MODEL_DIR, LR, BATCH_SIZE, DEBUG_BATCH_SIZE, EPOCHS, DEBUG_EPOCHS, NUM_WORKERS, PIN_MEMORY, FROZEN_CNN, USE_CACHED_FEATURES, NUM_CLASSES
+from config import JSON_PATH, VIDEO_DIR, HISTORY_PATH, MODEL_DIR, LR, BATCH_SIZE, DEBUG_BATCH_SIZE, EPOCHS, DEBUG_EPOCHS, NUM_WORKERS, PIN_MEMORY, FROZEN_CNN, USE_CACHED_FEATURES, NUM_CLASSES, WEIGHT_DECAY
 
 
 def get_dataloader(split: str, debug_mode: bool, batch_size: int) -> DataLoader:
@@ -104,7 +104,7 @@ def train(args):
     
     # Initialize Adam (adaptive learning rate optimizer)
     # Combines momentum and RMSprop updates
-    optimizer = optim.Adam(model.parameters(), lr=LR)
+    optimizer = optim.Adam(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
     
     # CrossEntropyLoss since we are doing multi-class classification
     criterion = nn.CrossEntropyLoss()

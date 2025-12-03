@@ -24,11 +24,13 @@ HISTORY_PATH = "results/history.json"        # Path to save history
 MODEL_DIR = "results/models"              # Path to save models
 HISTORY_GRAPH_PATH = "results/history.png"
 LR = 1e-4                           # Learning rate
+WEIGHT_DECAY = 1e-4
+LSTM_DROPOUT = 0.5
 
 # GPU config (tuned for my setup - 4070 Ti)
 BATCH_SIZE = 64
 DEBUG_BATCH_SIZE = 2
-EPOCHS = 100
+EPOCHS = 150
 DEBUG_EPOCHS = 1
 
 # CPU config (tuned for my setup - 5800X3D)

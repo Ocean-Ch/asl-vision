@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from torchvision import models
+import config
 
 class ASLResNetLSTM(nn.Module):
     """
@@ -79,7 +80,7 @@ class ASLResNetLSTM(nn.Module):
         # mobilenetv2 outputs 1280-dimensional feature vectors per frame
         MOBILENET_FEATURE_SIZE = 1280
         # randomly sets 30% of activations to 0 during training to prevent overfitting
-        LSTM_DROPOUT = 0.3
+        LSTM_DROPOUT = config.LSTM_DROPOUT
 
         self.lstm = nn.LSTM(
             input_size=MOBILENET_FEATURE_SIZE,
