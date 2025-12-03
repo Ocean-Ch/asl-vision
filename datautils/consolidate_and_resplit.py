@@ -7,7 +7,7 @@ from typing import List, Dict
 
 
 def find_top_n_classes(
-    json_path: str = config.TRAIN_JSON_PATH,
+    json_path: str = config.FULL_DATA_PATH,
     video_dir: str = config.VIDEO_DIR,
     num_classes: int = config.NUM_CLASSES,
     use_cached: bool = config.USE_CACHED_FEATURES,
@@ -278,7 +278,7 @@ def main():
     """
     # Step 1: Find top N classes with most valid videos across all splits
     consolidated_entries = find_top_n_classes(
-        json_path=config.TRAIN_JSON_PATH,
+        json_path=config.FULL_DATA_PATH,
         video_dir=config.VIDEO_DIR,
         num_classes=config.NUM_CLASSES,
         use_cached=config.USE_CACHED_FEATURES

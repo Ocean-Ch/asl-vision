@@ -3,7 +3,7 @@ from mock import NUM_MOCK_CHANNELS
 VIDEO_DIR = "data/videos"
 FEATURE_FILE = "data/all_features.pt"
 
-BEST_EPOCH = 15 
+BEST_EPOCH = 406 
 MODEL_FILENAME = f"model_epoch_{BEST_EPOCH}.pth"
 
 # ========== Configuration ==========
@@ -16,6 +16,7 @@ FRAMES_PER_CLIP = 32
 
 
 # Default paths
+FULL_DATA_PATH = "data/WLASL_v0.3.json"
 TRAIN_JSON_PATH = "data/resplit/train_top_100.json"  # Path to dataset metadata JSON file
 VAL_JSON_PATH = "data/resplit/val_top_100.json"  # Path to dataset metadata JSON file
 TEST_JSON_PATH = "data/resplit/test_top_100.json"  # Path to dataset metadata JSON file
@@ -25,12 +26,15 @@ MODEL_DIR = "results/models"              # Path to save models
 HISTORY_GRAPH_PATH = "results/history.png"
 LR = 1e-4                           # Learning rate
 WEIGHT_DECAY = 1e-4
-LSTM_DROPOUT = 0.5
+LSTM_DROPOUT = 0.4
+LSTM_HIDDEN = 128
+NUM_LSTM_LAYERS = 1
+LABEL_SMOOTHING = 0.07
 
 # GPU config (tuned for my setup - 4070 Ti)
-BATCH_SIZE = 64
+BATCH_SIZE = 32
 DEBUG_BATCH_SIZE = 2
-EPOCHS = 150
+EPOCHS = 500
 DEBUG_EPOCHS = 1
 
 # CPU config (tuned for my setup - 5800X3D)

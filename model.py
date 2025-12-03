@@ -26,12 +26,12 @@ class ASLResNetLSTM(nn.Module):
     """
     def __init__(
         self, 
-        num_classes: int = 2000, 
-        lstm_hidden: int = 256, 
-        num_lstm_layers: int = 2, 
+        num_classes: int = config.NUM_CLASSES, 
+        lstm_hidden: int = config.LSTM_HIDDEN, 
+        num_lstm_layers: int = config.NUM_LSTM_LAYERS, 
         frozenCNN: bool = True,
-        use_cached_features: bool = True,
-        expect_features: bool = True
+        use_cached_features: bool = config.USE_CACHED_FEATURES,
+        expect_features: bool = config.USE_CACHED_FEATURES
     ):
         """
         Initializes the model architecture.
@@ -48,6 +48,7 @@ class ASLResNetLSTM(nn.Module):
         # expect features: if True, the input is expected to be a tensor of shape (batch, frames, 1280)
         # if False, the input is expected to be a tensor of shape (batch, frames, 3, 224, 224)
         self.expect_features = expect_features
+        self.dropout = nn.Dropout(config.LSTM_DROPOUT)
         
         # ========== 1. CNN Feature Extractor (MobileNetV2) ==========
         # load pretrained MobileNetV2 model (lightweight CNN architecture)
@@ -155,6 +156,8 @@ class ASLResNetLSTM(nn.Module):
         else:
             lstm_in = x
         
+        lstm_in = self.dropout(lstm_in)
+        
         # lstm_out: output at each time step, shape (batch, time, lstm_hidden)
         # _: hidden state tuple (we don't need it here, so we use _ to ignore it)
         lstm_out, _ = self.lstm(lstm_in)
@@ -164,6 +167,8 @@ class ASLResNetLSTM(nn.Module):
         # [:, -1, :] means: all batches, last frame (-1), all features
         # shape: (batch, lstm_hidden)
         last_frame = lstm_out[:, -1, :] 
+
+        last_frame = self.dropout(last_frame)
         
         # final classification: map LSTM output to class predictions
         # output shape: (batch, num_classes) - one score per gloss class

@@ -33,7 +33,7 @@ def plot_history(file_path: str = config.HISTORY_PATH):
         print(f"Found keys: {list(history.keys())}")
         return
 
-    _, ax = plt.subplots(figsize=(10, 5))
+    _, ax = plt.subplots(figsize=(12, 6))
 
     # 5. Plot Accuracy
     for name, values in acc_metrics.items():
@@ -45,6 +45,24 @@ def plot_history(file_path: str = config.HISTORY_PATH):
     ax.set_xlabel("Epochs")
     ax.legend()
     ax.grid(True, linestyle='--', alpha=0.6)
+
+    # Add training parameters text box
+    params_text = (
+        f"Training Parameters:\n"
+        f"Weight Decay: {config.WEIGHT_DECAY}\n"
+        f"LSTM Dropout: {config.LSTM_DROPOUT}\n"
+        f"LSTM Hidden Size: {config.LSTM_HIDDEN}\n"
+        f"LSTM Layers: {config.NUM_LSTM_LAYERS}\n"
+        f"Augmentation: {config.AUGMENT_ENABLED}\n"
+    )
+    
+    # Place text box in upper right corner
+    ax.text(0.98, 0.98, params_text, 
+            transform=ax.transAxes,
+            fontsize=9,
+            verticalalignment='top',
+            horizontalalignment='right',
+            bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
 
     plt.tight_layout()
     

@@ -113,7 +113,7 @@ def train(args):
     optimizer = optim.Adam(model.parameters(), lr=config.LR, weight_decay=config.WEIGHT_DECAY)
     
     # CrossEntropyLoss since we are doing multi-class classification
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss(label_smoothing=config.LABEL_SMOOTHING)
 
     
     # history tracking for plotting later
