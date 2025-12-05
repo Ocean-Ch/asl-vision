@@ -233,7 +233,7 @@ class WLASLDataset(Dataset):
             
             # Apply speed augmentation if enabled
             if self.augment:
-                features = self._apply_speed_augmentation(features)
+                features = self._apply_augmentation(features)
 
             return features, self.gloss_to_id[item['gloss']]
 
@@ -241,12 +241,13 @@ class WLASLDataset(Dataset):
         frames = self.load_video_frames(item['video_path'], self.frames_per_clip)
         return frames, self.gloss_to_id[item['gloss']]
 
-    def _apply_speed_augmentation(self, features: torch.Tensor) -> torch.Tensor:
+    def _apply_augmentation(self, features: torch.Tensor) -> torch.Tensor:
         """
         Applies speed augmentation (temporal resampling) to video features.
+        As a side affect, it also adds Gaussian noise (jitter) to the features.
         
         This augmentation randomly changes the playback speed of the video by:
-        1. Choosing a random speed factor (0.5x to 1.5x)
+        1. Choosing a random speed factor (0.5x to 1.2x)
         2. Resampling frames using linear interpolation
         3. Padding or truncating to match the required frame count
         
@@ -259,11 +260,11 @@ class WLASLDataset(Dataset):
         if np.random.random() < 0.5:
             return features
         
-        # 1. Choose a random speed factor (0.5x to 1.5x)
+        # 1. Choose a random speed factor (0.5x to 1.2x)
         # < 1.0 means fast (fewer frames), > 1.0 means slow (more frames)
         speed_factor = np.random.uniform(0.5, 1.2)
 
-        # [NEW] Add Gaussian Noise (Jitter)
+        # Gaussian Noise (Jitter)
         # This prevents the model from memorizing exact feature values
         noise = torch.randn_like(features) * 0.02 # 2% noise
         features = features + noise
@@ -281,7 +282,7 @@ class WLASLDataset(Dataset):
         features = features[indices]
         
         # 4. Pad or Truncate to match self.frames_per_clip
-        # This is CRITICAL because DataLoader requires consistent batch shapes
+        #  DataLoader requires consistent batch shapes
         current_len = features.shape[0]
         
         if current_len > self.frames_per_clip:
@@ -316,13 +317,12 @@ def filter_by_availability(raw_data, video_dir, num_classes, use_cached, cached_
             is_valid = False
             
             if use_cached:
-                # Check dictionary lookup (fast) + content check
                 if path in cached_features:
                     # check if tensor is not empty/zero
                     if torch.sum(cached_features[path]) != 0:
                         is_valid = True
             else:
-                # Check disk (slower)
+                # Check disk
                 if os.path.exists(path):
                     is_valid = True
             

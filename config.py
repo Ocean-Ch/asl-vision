@@ -3,7 +3,7 @@ from mock import NUM_MOCK_CHANNELS
 VIDEO_DIR = "data/videos"
 FEATURE_FILE = "data/all_features.pt"
 
-BEST_EPOCH = 406 
+BEST_EPOCH = 116
 MODEL_FILENAME = f"model_epoch_{BEST_EPOCH}.pth"
 
 # ========== Configuration ==========
@@ -26,15 +26,15 @@ MODEL_DIR = "results/models"              # Path to save models
 HISTORY_GRAPH_PATH = "results/history.png"
 LR = 1e-4                           # Learning rate
 WEIGHT_DECAY = 1e-4
-LSTM_DROPOUT = 0.4
-LSTM_HIDDEN = 128
-NUM_LSTM_LAYERS = 1
-LABEL_SMOOTHING = 0.07
+LSTM_DROPOUT = 0.3
+LSTM_HIDDEN = 256
+NUM_LSTM_LAYERS = 2
+LABEL_SMOOTHING = 0.05
 
 # GPU config (tuned for my setup - 4070 Ti)
 BATCH_SIZE = 32
 DEBUG_BATCH_SIZE = 2
-EPOCHS = 500
+EPOCHS = 150
 DEBUG_EPOCHS = 1
 
 # CPU config (tuned for my setup - 5800X3D)
@@ -56,5 +56,5 @@ MSASL_OUTPUT_DIR = "data/msasl_100_videos"   # Output directory for downloaded M
 # Dataset Resplitting Configuration
 RESPLIT_OUTPUT_DIR = "data/resplit"  # Directory to save resplit JSON files
 TRAIN_SPLIT_PERCENT = 0.7  # Percentage of videos for training set
-VAL_SPLIT_PERCENT = 0.15   # Percentage of videos for validation set
-TEST_SPLIT_PERCENT = 0.15  # Percentage of videos for test set
+VAL_SPLIT_PERCENT = 0.18   # Percentage of videos for validation set
+TEST_SPLIT_PERCENT = 0.12  # Percentage of videos for test set
