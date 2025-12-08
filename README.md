@@ -12,6 +12,51 @@ This project implements an ASL video recognition system using a CNN-LSTM archite
 - **Configuration**: `config.py` centralizes all hyperparameters, paths, and training settings
 - **Utilities**: `datautils/` contains scripts for dataset analysis, health checks, and data management
 
+## Usage
+
+**Prerequisites**: The WLASL dataset is expected at the configured paths in `config.py`. Ensure that:
+
+- Video files are located in the directory specified by `VIDEO_DIR` (default: `data/videos`)
+- JSON metadata files (train/val/test splits) are available at the paths specified in `config.py`
+
+### Training Workflow
+
+1. **Extract Features** (one-time setup, ~a couple hours depending on dataset size):
+
+   ```bash
+   python extract_to_memory.py
+   ```
+
+   This pre-extracts MobileNetV2 features from all videos and saves them to disk for fast training.
+
+2. **Train the Model**:
+
+   ```bash
+   python train.py
+   ```
+
+   For debug mode (uses fake generated data, and only runs 1 epoch for testing shapes):
+
+   ```bash
+   python train.py --debug
+   ```
+
+3. **Evaluate the Model**:
+
+   ```bash
+   python evaluate.py
+   ```
+
+   This loads the best checkpoint and computes test set accuracy metrics.
+
+### Quick Start with Debug Mode
+
+To quickly test the codebase without the full dataset:
+
+```bash
+python train.py --debug
+```
+
 ## Model Architecture & Pipeline
 
 This project implements a resource-efficient CNN-LSTM architecture designed to recognize isolated American Sign Language (ASL) signs. Due to severe dataset degradation ("link rot") and long-tail distribution in the WLASL dataset, we focused on the Top-100 most frequent gloss categories.
