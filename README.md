@@ -153,10 +153,22 @@ Update these paths to point to your dataset location:
 
 This project is inspired by and built upon the following academic papers and architectures:
 
-- **MobileNetV2**: Sandler, M., Howard, A., Zhu, M., Zhmoginov, A., & Chen, L. C. (2018). *MobileNetV2: Inverted Residuals and Linear Bottlenecks*. arXiv:1801.04381
+[1] R. E. Mitchell and T. A. Young, "How many people use sign language? a national health survey-based estimate," *Journal of Deaf Studies and Deaf Education*, vol. 28, pp. 1–6, Dec. 2022.
 
-- **LSTM**: Hochreiter, S., & Schmidhuber, J. (1997). *Long Short-Term Memory*. Neural Computation
+[2] D. Li, C. Rodriguez, X. Yu, and H. Li, "Word-level deep sign language recognition from video: A new large-scale dataset and methods comparison," in *Proceedings of the IEEE/CVF Winter Conference on Applications of Computer Vision (WACV)*, pp. 1459–1469, 2020.
 
-- **I3D (Baseline)**: Li et al. (2020). arXiv:11910.11006
+[3] M. Ya, E. Shen, and J. Liu, "A novel sign language translation model: Gloss-free video-to-sequence translation using transformer encoder and llm decoder," tech. rep., Stanford University, 2024.
 
-- **Feature Augmentation**: Laines et al. (2023). *Isolated Sign Language Recognition Based on Tree Structure Skeleton Images*.
+[4] M. Madhiarasan and P. P. Roy, "A comprehensive review of sign language recognition: Different types, modalities, and datasets," 2022.
+
+[5] J. Donahue, L. A. Hendricks, S. Guadarrama, M. Rohrbach, S. Venugopalan, K. Saenko, and T. Darrell, "Long-term recurrent convolutional networks for visual recognition and description," in *Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR)*, pp. 2625–2634, 2015.
+
+[6] J. Huang and V. Chouvatut, "Video-based sign language recognition via resnet and lstm network," *Journal of Imaging*, vol. 10, no. 6, 2024.
+
+[7] M. Sandler, A. Howard, M. Zhu, A. Zhmoginov, and L.-C. Chen, "Mobilenetv2: Inverted residuals and linear bottlenecks," in *Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR)*, pp. 4510–4520, 2018.
+
+[8] S. Hochreiter and J. Schmidhuber, "Long short-term memory," *Neural Computation*, vol. 9, no. 8, pp. 1735–1780, 1998.
+
+[9] A. Laines et al., "Isolated sign language recognition based on tree structure skeleton images," in *Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) Workshops*, pp. 6123–6132, 2023.
+
+[10] S. Reshma and M. Nair, "Isolated video-based sign language recognition using a hybrid cnn-lstm framework based on attention," 2022.
